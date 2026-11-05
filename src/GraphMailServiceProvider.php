@@ -2,6 +2,7 @@
 
 namespace MercantilePacific\GraphMail;
 
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\ServiceProvider;
 
 class GraphMailServiceProvider extends ServiceProvider
@@ -16,6 +17,10 @@ class GraphMailServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Mail::extend('graph', fn (array $config): GraphTransport => new GraphTransport(
+            $this->app->make(GraphMailManager::class)->connection($config['connection'] ?? null),
+        ));
+
         $this->publishes([
             __DIR__.'/../config/graph-mail.php' => config_path('graph-mail.php'),
         ], 'graph-mail-config');

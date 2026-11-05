@@ -6,6 +6,7 @@
     "require": {
         "php": "^8.2",
         "illuminate/cache": "^10.0|^11.0|^12.0|^13.0",
+        "illuminate/mail": "^10.0|^11.0|^12.0|^13.0",
         "illuminate/http": "^10.0|^11.0|^12.0|^13.0",
         "illuminate/support": "^10.0|^11.0|^12.0|^13.0",
         "nesbot/carbon": "^2.67|^3.0"

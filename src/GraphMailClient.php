@@ -203,6 +203,19 @@ class GraphMailClient
     }
 
     /**
+     * Sends a ready-made MIME message (to, cc, bcc, attachments and inline
+     * images all come from its headers and parts). Same no-retry rule as
+     * `sendMail()`.
+     */
+    public function sendMime(string $mime): void
+    {
+        $this->request(retryTransient: false)
+            ->withBody(base64_encode($mime), 'text/plain')
+            ->post($this->mailboxUrl('/sendMail'))
+            ->throw();
+    }
+
+    /**
      * The whole text of one email (Graph's preview is only ~255 characters).
      * Falls back to '' when it can't be read.
      */
