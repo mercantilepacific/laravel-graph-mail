@@ -11,6 +11,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use ReflectionMethod;
 use RuntimeException;
 use Throwable;
 
@@ -252,14 +253,7 @@ class GraphMailClient
         return Http::withToken($this->accessToken())
             ->acceptJson()
             ->timeout(30)
-            ->retry(3, function (int $attempt, Throwable $exception): int {
-                // Throttled: wait as long as Microsoft asks (capped), else a short pause.
-                if ($exception instanceof RequestException && $exception->response->status() === 429) {
-                    return min(10, max(1, (int) $exception->response->header('Retry-After'))) * 1000;
-                }
-
-                return 500;
-            }, function (Throwable $exception, PendingRequest $request) use ($retryTransient): bool {
+            ->retry(3, $this->retryDelay(), function (Throwable $exception, PendingRequest $request) use ($retryTransient): bool {
                 if ($exception instanceof RequestException && $exception->response->status() === 401) {
                     Cache::forget($this->tokenCacheKey());
                     $request->withToken($this->accessToken());
@@ -271,6 +265,28 @@ class GraphMailClient
                     || $exception->response->serverError()
                     || $exception->response->status() === 429);
             }, throw: false);
+    }
+
+    /**
+     * The pause between retries: as long as Microsoft asks when throttled
+     * (capped), else a short one. Laravel 9 only takes a fixed delay, so it
+     * gets a plain 500 ms.
+     */
+    private function retryDelay(): Closure|int
+    {
+        $type = (new ReflectionMethod(PendingRequest::class, 'retry'))->getParameters()[1]->getType();
+
+        if ($type === null || ! str_contains((string) $type, 'Closure')) {
+            return 500;
+        }
+
+        return function (int $attempt, Throwable $exception): int {
+            if ($exception instanceof RequestException && $exception->response->status() === 429) {
+                return min(10, max(1, (int) $exception->response->header('Retry-After'))) * 1000;
+            }
+
+            return 500;
+        };
     }
 
     /** App-only token, cached until shortly before it expires. */

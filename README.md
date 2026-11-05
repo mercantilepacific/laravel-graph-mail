@@ -5,7 +5,7 @@ Send and read Microsoft 365 mail from Laravel through Microsoft Graph, using an 
 - a `graph` mail driver, so Mailables and Notifications go through Graph with no code changes;
 - a `GraphMailClient` to read a mailbox, download attachments and send mail directly.
 
-Requires PHP 8.2+ and Laravel 10, 11, 12 or 13.
+Requires PHP 8.1+ and Laravel 9, 10, 11, 12 or 13.
 
 ## Installation
 
@@ -156,6 +156,7 @@ app(GraphMailManager::class)->rejectAttachmentsUsing(
 ## Retries and limits
 
 - Reads retry on timeouts, lost connections, 5xx and 429 (honouring `Retry-After`).
+- On Laravel 10+ the pause after a 429 follows `Retry-After`; Laravel 9 only supports a fixed delay, so it waits 500 ms.
 - A 401 drops the cached token and retries once with a new one.
 - **Sending is never retried** on a timeout, lost connection, 5xx or 429. Graph may already have sent the message, and a retry would deliver it twice. A failed send throws, so handle it in your code. For queued mail, keep `$tries` low on the job.
 - The access token is cached per tenant, app and mailbox. Use a shared cache such as Redis so queue workers on different servers share it.
